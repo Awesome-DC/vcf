@@ -16,10 +16,36 @@ export default function SaveContact() {
   const [loadMsg, setLoadMsg] = useState('Saving your contact...');
   const [envelopeClose, setEnvelopeClose] = useState(false);
 
+  const PHONE_LENGTHS = {
+    '+234':10,'+233':9,'+254':9,'+27':9,'+251':9,'+255':9,'+256':9,
+    '+221':9,'+225':10,'+237':9,'+20':10,'+212':9,'+216':8,'+213':9,
+    '+218':9,'+249':9,'+244':9,'+258':9,'+260':9,'+263':9,'+250':9,
+    '+229':8,'+228':8,'+223':8,'+226':8,'+227':8,'+235':8,'+252':8,
+    '+261':9,'+242':9,'+243':9,'+241':8,'+266':8,'+267':8,'+264':9,
+    '+268':8,'+44':10,'+1':10,'+91':10,'+92':10,'+880':10,'+94':9,
+    '+63':10,'+62':10,'+60':9,'+65':8,'+66':9,'+84':9,'+86':11,
+    '+81':10,'+82':10,'+61':9,'+64':9,'+33':9,'+49':10,'+39':10,
+    '+34':9,'+351':9,'+31':9,'+32':9,'+46':9,'+47':8,'+45':8,
+    '+358':9,'+48':9,'+380':9,'+7':10,'+90':10,'+966':9,'+971':9,
+    '+974':8,'+965':8,'+973':8,'+968':8,'+964':10,'+98':10,'+972':9,
+    '+962':9,'+961':8,'+55':11,'+54':10,'+57':10,'+56':9,'+51':9,
+    '+58':10,'+52':10,'+502':8,'+53':8,
+  };
+
   const handleSubmit = async () => {
     setError('');
     if (!name.trim()) { setError('Please enter your full name'); return; }
-    if (!phone.trim()) { setError('Please enter your WhatsApp number'); return; }
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (!digitsOnly) { setError('Phone number must contain digits only'); return; }
+    const expectedLen = PHONE_LENGTHS[dial];
+    if (expectedLen && digitsOnly.length !== expectedLen) {
+      setError(`Phone number for ${dial} must be exactly ${expectedLen} digits (you entered ${digitsOnly.length})`);
+      return;
+    }
+    if (!expectedLen && (digitsOnly.length < 6 || digitsOnly.length > 12)) {
+      setError('Please enter a valid phone number (6-12 digits)');
+      return;
+    }
     setStep(STEPS.LOADING);
     setProgress(0);
     setEnvelopeClose(false);
@@ -139,8 +165,11 @@ export default function SaveContact() {
               type="tel"
               placeholder="8012345678"
               value={phone}
-              onChange={e => setPhone(e.target.value)}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              maxLength={12}
+              inputMode="numeric"
+              pattern="[0-9]*" 
               className="phone-input"
             />
           </div>
