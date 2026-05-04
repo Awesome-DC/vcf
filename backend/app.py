@@ -116,5 +116,6 @@ def reset_db():
     return jsonify({"message": "Database reset"})
 
 if __name__ == "__main__":
-    debug = os.getenv("FLASK_DEBUG", "True") == "True"
-    app.run(debug=debug, port=5000)
+    port = int(os.getenv("PORT", 5000))
+    debug = os.getenv("FLASK_DEBUG", "False") == "True"
+    app.run(host="0.0.0.0", port=port, debug=debug)
