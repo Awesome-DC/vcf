@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import sqlite3, os, io, re
+import sqlite3, os, io, re, json
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -29,12 +29,46 @@ def init_db():
                 created_at TEXT NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
+        # Default: not locked, deadline 3 days from now (Wednesday 6pm logic handled on frontend)
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('locked', 'false')")
+        conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES ('deadline', '')")
         conn.commit()
 
 init_db()
 
+def get_setting(key):
+    with get_db() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+        return row['value'] if row else None
+
+def set_setting(key, value):
+    with get_db() as conn:
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)", (key, value))
+        conn.commit()
+
+@app.route("/api/status", methods=["GET"])
+def get_status():
+    locked = get_setting('locked') == 'true'
+    deadline = get_setting('deadline') or ''
+    return jsonify({"locked": locked, "deadline": deadline})
+
+
+@app.route("/api/public-count", methods=["GET"])
+def public_count():
+    with get_db() as conn:
+        row = conn.execute("SELECT COUNT(*) as cnt FROM contacts").fetchone()
+    return jsonify({"count": row["cnt"]})
+
 @app.route("/api/submit", methods=["POST"])
 def submit():
+    if get_setting('locked') == 'true':
+        return jsonify({"error": "Submissions are closed"}), 403
     data = request.json
     name = data.get("name","").strip()
     phone = data.get("phone","").strip()
@@ -77,6 +111,9 @@ def generate_vcf():
     if not rows:
         return jsonify({"error": "No contacts"}), 404
 
+    # Lock submissions
+    set_setting('locked', 'true')
+
     vcf_entries = []
     for i, row in enumerate(rows, start=1):
         name = row["name"]
@@ -86,23 +123,31 @@ def generate_vcf():
         first = " ".join(parts[1:]) if len(parts) > 1 else ""
         display_name = f"{name} vcf{i}"
         vcf_entries.append(
-            f"BEGIN:VCARD\n"
-            f"VERSION:3.0\n"
-            f"FN:{display_name}\n"
-            f"N:{last};{first};;;\n"
-            f"TEL;TYPE=WHATSAPP,CELL:{phone}\n"
-            f"END:VCARD"
+            f"BEGIN:VCARD\nVERSION:3.0\nFN:{display_name}\nN:{last};{first};;;\nTEL;TYPE=WHATSAPP,CELL:{phone}\nEND:VCARD"
         )
 
     vcf_content = "\n\n".join(vcf_entries)
     buffer = io.BytesIO(vcf_content.encode("utf-8"))
     buffer.seek(0)
-    return send_file(
-        buffer,
-        mimetype="text/vcard",
-        as_attachment=True,
-        download_name="contacts.vcf"
-    )
+    return send_file(buffer, mimetype="text/vcard", as_attachment=True, download_name="contacts.vcf")
+
+@app.route("/api/admin/set-deadline", methods=["POST"])
+def set_deadline():
+    pw = request.headers.get("X-Admin-Password","")
+    if pw != ADMIN_PASSWORD:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    deadline = data.get("deadline","")
+    set_setting('deadline', deadline)
+    return jsonify({"message": "Deadline set", "deadline": deadline})
+
+@app.route("/api/admin/unlock", methods=["POST"])
+def unlock():
+    pw = request.headers.get("X-Admin-Password","")
+    if pw != ADMIN_PASSWORD:
+        return jsonify({"error": "Unauthorized"}), 401
+    set_setting('locked', 'false')
+    return jsonify({"message": "Unlocked"})
 
 @app.route("/api/admin/reset", methods=["DELETE"])
 def reset_db():
@@ -113,6 +158,8 @@ def reset_db():
         conn.execute("DELETE FROM contacts")
         conn.execute("DELETE FROM sqlite_sequence WHERE name='contacts'")
         conn.commit()
+    set_setting('locked', 'false')
+    set_setting('deadline', '')
     return jsonify({"message": "Database reset"})
 
 if __name__ == "__main__":
