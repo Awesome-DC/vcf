@@ -2,12 +2,16 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import sqlite3, os, io, re
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+CORS(app, origins=[FRONTEND_URL])
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "contacts.db")
-ADMIN_PASSWORD = "admin1234"
+DB_PATH = os.path.join(os.path.dirname(__file__), os.getenv("DB_PATH", "contacts.db"))
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin1234")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -112,4 +116,5 @@ def reset_db():
     return jsonify({"message": "Database reset"})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    debug = os.getenv("FLASK_DEBUG", "True") == "True"
+    app.run(debug=debug, port=5000)
