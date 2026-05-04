@@ -176,3 +176,38 @@
   .toolbar-actions { width: 100%; }
   .toolbar-actions button { flex: 1; }
 }
+
+/* Status banner */
+.status-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-radius: 10px;
+  margin-bottom: 20px; font-size: 14px; font-weight: 500; gap: 12px;
+}
+.status-banner.open { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.status-banner.locked { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.btn-unlock {
+  background: #15803d; color: white; border: none;
+  padding: 7px 16px; border-radius: 6px; font-size: 13px;
+  font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.btn-unlock:hover { background: #166534; }
+
+/* Admin card */
+.admin-card {
+  background: var(--bg-card, white); border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px; padding: 20px; margin-bottom: 24px;
+}
+.admin-card-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.admin-card-sub { font-size: 13px; color: var(--muted, #6b7b72); margin-bottom: 16px; }
+.deadline-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.deadline-input {
+  flex: 1; min-width: 200px; padding: 10px 14px;
+  border: 1.5px solid var(--border, #e5e7eb); border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  background: white; color: #0d1f15;
+}
+.deadline-input:focus { border-color: #16a34a; outline: none; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+.deadline-active {
+  margin-top: 12px; font-size: 13px; color: #15803d;
+  background: #dcfce7; padding: 8px 12px; border-radius: 6px;
+}

@@ -1,9 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import COUNTRIES from '../components/countries';
 import './SaveContact.css';
 
 const STEPS = { FORM: 'form', LOADING: 'loading', SUCCESS: 'success' };
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function Countdown({ deadline }) {
+  const [timeLeft, setTimeLeft] = useState({});
+
+  useEffect(() => {
+    const calc = () => {
+      const diff = new Date(deadline) - new Date();
+      if (diff <= 0) return setTimeLeft(null);
+      setTimeLeft({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    calc();
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
+  }, [deadline]);
+
+  if (!timeLeft) return <div className="timer-expired">⏰ Time is up! Submissions closed.</div>;
+
+  return (
+    <div className="timer-wrap">
+      <p className="timer-label">Submissions close in</p>
+      <div className="timer-blocks">
+        {[['d','Days'],['h','Hrs'],['m','Min'],['s','Sec']].map(([k,lbl]) => (
+          <div className="timer-block" key={k}>
+            <span className="timer-num">{pad(timeLeft[k])}</span>
+            <span className="timer-unit">{lbl}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClosedPage() {
+  const downloadVcf = () => {
+    window.open('/api/admin/public-vcf', '_blank');
+  };
+
+  return (
+    <div className="save-page">
+      <div className="save-card closed-card animate-fadeup">
+        <div className="closed-icon">🔒</div>
+        <h2>Submissions are closed</h2>
+        <p className="closed-sub">
+          The contact collection period has ended. You can now download the contact file below and import it into your phone.
+        </p>
+
+        <a className="btn-primary download-btn" href="/api/public-vcf" download="contacts.vcf">
+          ⬇ Download Contacts File
+        </a>
+
+        <div className="instructions">
+          <h3>How to import contacts into your phone</h3>
+
+          <div className="instr-section">
+            <div className="instr-os">📱 Android</div>
+            <ol>
+              <li>Download the <strong>contacts.vcf</strong> file above</li>
+              <li>Open your <strong>Contacts</strong> app</li>
+              <li>Tap the <strong>menu (⋮)</strong> → <strong>Import</strong></li>
+              <li>Select <strong>Import from file (.vcf)</strong></li>
+              <li>Choose the downloaded file — done!</li>
+            </ol>
+          </div>
+
+          <div className="instr-section">
+            <div className="instr-os">🍎 iPhone</div>
+            <ol>
+              <li>Download the <strong>contacts.vcf</strong> file above</li>
+              <li>Tap the file in your <strong>Downloads</strong> or <strong>Files</strong> app</li>
+              <li>iOS will ask <strong>"Would you like to add these contacts?"</strong></li>
+              <li>Tap <strong>Add All Contacts</strong> — done!</li>
+            </ol>
+          </div>
+
+          <div className="instr-section">
+            <div className="instr-os">💬 WhatsApp tip</div>
+            <p>After importing, open WhatsApp. Go to <strong>New Chat</strong> and you will see all the contacts listed. You can also create a <strong>Broadcast List</strong> to message everyone at once.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SaveContact() {
   const navigate = useNavigate();
@@ -15,6 +105,20 @@ export default function SaveContact() {
   const [progress, setProgress] = useState(0);
   const [loadMsg, setLoadMsg] = useState('Saving your contact...');
   const [envelopeClose, setEnvelopeClose] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [deadline, setDeadline] = useState('');
+  const [statusLoaded, setStatusLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(d => {
+        setLocked(d.locked);
+        setDeadline(d.deadline || '');
+        setStatusLoaded(true);
+      })
+      .catch(() => setStatusLoaded(true));
+  }, []);
 
   const PHONE_LENGTHS = {
     '+234':10,'+233':9,'+254':9,'+27':9,'+251':9,'+255':9,'+256':9,
@@ -74,6 +178,16 @@ export default function SaveContact() {
     navigator.clipboard.writeText(window.location.origin).catch(() => {});
     alert('Link copied! Share it with others.');
   };
+
+  if (!statusLoaded) return (
+    <div className="save-page">
+      <div className="save-card" style={{ textAlign: 'center', padding: '60px 40px' }}>
+        <span className="spinner large" />
+      </div>
+    </div>
+  );
+
+  if (locked) return <ClosedPage />;
 
   if (step === STEPS.LOADING) return (
     <div className="save-page">
@@ -139,16 +253,12 @@ export default function SaveContact() {
           </div>
         </div>
 
+        {deadline && <Countdown deadline={deadline} />}
         {error && <div className="error-box">{error}</div>}
 
         <div className="field">
           <label>Full name</label>
-          <input
-            type="text"
-            placeholder="e.g. John Doe"
-            value={name}
-            onChange={e => setName(e.target.value)}
-          />
+          <input type="text" placeholder="e.g. John Doe" value={name} onChange={e => setName(e.target.value)} />
         </div>
 
         <div className="field">
@@ -156,28 +266,21 @@ export default function SaveContact() {
           <div className="phone-row">
             <select value={dial} onChange={e => setDial(e.target.value)} className="country-select">
               {COUNTRIES.map(c => (
-                <option key={`${c.code}-${c.dial}`} value={c.dial}>
-                  {c.code} {c.dial} — {c.name}
-                </option>
+                <option key={`${c.code}-${c.dial}`} value={c.dial}>{c.code} {c.dial} — {c.name}</option>
               ))}
             </select>
             <input
-              type="tel"
-              placeholder="8012345678"
-              value={phone}
+              type="tel" placeholder="8012345678" value={phone}
               onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              maxLength={12}
-              inputMode="numeric"
-              pattern="[0-9]*" 
+              maxLength={12} inputMode="numeric" pattern="[0-9]*"
               className="phone-input"
             />
           </div>
         </div>
 
         <button className="btn-primary submit-btn" onClick={handleSubmit}>
-          Save my contact
-          <span>→</span>
+          Save my contact <span>→</span>
         </button>
         <p className="privacy-note">Your number is only used to stay in touch.</p>
       </div>

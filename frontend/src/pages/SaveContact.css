@@ -160,3 +160,100 @@
 @media (max-width: 520px) {
   .save-card { padding: 28px 20px; }
 }
+
+/* Countdown timer */
+.timer-wrap {
+  background: var(--forest);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.timer-label {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(245,242,235,0.6); margin-bottom: 10px;
+}
+.timer-blocks {
+  display: flex; justify-content: center; gap: 12px;
+}
+.timer-block {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(200,168,75,0.15);
+  border: 1px solid rgba(200,168,75,0.3);
+  border-radius: 6px; padding: 8px 14px; min-width: 56px;
+}
+.timer-num {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 800;
+  color: var(--gold-light); line-height: 1;
+}
+.timer-unit {
+  font-size: 10px; color: rgba(245,242,235,0.5);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+.timer-expired {
+  background: #7a1f1f; color: #fde8e8;
+  border-radius: 6px; padding: 12px 16px;
+  font-size: 14px; text-align: center; margin-bottom: 16px;
+}
+
+/* Closed / locked page */
+.closed-card { text-align: center; max-width: 560px; }
+.closed-icon { font-size: 48px; margin-bottom: 16px; }
+.closed-card h2 {
+  font-size: 24px; font-weight: 800; color: var(--forest);
+  letter-spacing: -0.02em; margin-bottom: 10px;
+}
+.closed-sub {
+  font-size: 15px; color: var(--muted); line-height: 1.7; margin-bottom: 24px;
+}
+.download-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; text-decoration: none;
+  background: var(--forest); color: var(--gold-light);
+  padding: 15px 32px; border-radius: 4px;
+  font-size: 16px; font-weight: 500; margin-bottom: 32px;
+  transition: background .2s;
+}
+.download-btn:hover { background: var(--moss); }
+
+/* Instructions */
+.instructions {
+  background: var(--cream); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px; text-align: left;
+}
+.instructions h3 {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 700; color: var(--forest);
+  margin-bottom: 20px; text-align: center;
+}
+.instr-section {
+  margin-bottom: 20px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.instr-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.instr-os {
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  color: var(--forest); margin-bottom: 10px;
+}
+.instr-section ol {
+  padding-left: 20px; display: flex; flex-direction: column; gap: 6px;
+}
+.instr-section li { font-size: 14px; color: var(--ink); line-height: 1.5; }
+.instr-section p { font-size: 14px; color: var(--ink); line-height: 1.6; }
+
+.spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+.spinner.large {
+  width: 28px; height: 28px;
+  border-color: var(--border);
+  border-top-color: var(--leaf);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
