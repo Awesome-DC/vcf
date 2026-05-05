@@ -121,7 +121,7 @@ export default function SaveContact() {
   }, []);
 
   // ✏️ CHANGE THIS to your actual WhatsApp group invite link
-  const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/YOUR_GROUP_INVITE_LINK';
+  const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/JSqefensmeX2eC7XTqf2O4?mode=gi_t';
 
   const PHONE_LENGTHS = {
     '+234':10,'+233':9,'+254':9,'+27':9,'+251':9,'+255':9,'+256':9,
